@@ -1,0 +1,6 @@
+/target
+/result
+/.direnv
+.env
+data/processed/
+data/failed/
