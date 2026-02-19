@@ -13,12 +13,10 @@ pub struct AppState {
 
 impl AppState {
     pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let database_url =
-            std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
         let qdrant_url =
             std::env::var("QDRANT_URL").unwrap_or_else(|_| "http://localhost:6334".to_string());
-        let mistral_api_key =
-            std::env::var("MISTRAL_API_KEY").unwrap_or_default();
+        let mistral_api_key = std::env::var("MISTRAL_API_KEY").unwrap_or_default();
 
         let pool = PgPoolOptions::new()
             .max_connections(10)
@@ -28,6 +26,8 @@ impl AppState {
         sqlx::migrate!().run(&pool).await?;
 
         let mut qdrant_builder = Qdrant::from_url(&qdrant_url);
+        qdrant_builder.check_compatibility = false;
+
         if let Ok(api_key) = std::env::var("QDRANT_API_KEY") {
             if !api_key.is_empty() {
                 qdrant_builder = qdrant_builder.api_key(api_key);
