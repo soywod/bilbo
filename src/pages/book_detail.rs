@@ -9,9 +9,9 @@ use crate::components::tag_badge::TagBadge;
 #[component]
 pub fn BookDetailPage() -> impl IntoView {
     let params = use_params_map();
-    let ref_id = move || params.read().get("ref_id").unwrap_or_default();
+    let reference = move || params.read().get("reference").unwrap_or_default();
 
-    let book_resource = Resource::new(ref_id, |ref_id| get_book(ref_id));
+    let book_resource = Resource::new(reference, |reference| get_book(reference));
 
     view! {
         <Suspense fallback=|| view! { <p>"Chargement..."</p> }>
@@ -19,14 +19,16 @@ pub fn BookDetailPage() -> impl IntoView {
                 book_resource.get().map(|result| {
                     match result {
                         Ok(Some(book)) => {
-                            let description = book.summary.clone().unwrap_or_else(|| {
-                                format!("{} par {}", book.title, book.authors.join(", "))
-                            });
+                            let description = book.summary.clone()
+                                .map(|s| strip_html_tags(&s))
+                                .unwrap_or_else(|| {
+                                    format!("{} par {}", book.title, book.authors.join(", "))
+                                });
                             let json_ld = build_json_ld(&book);
                             let title = book.title.clone();
                             let og_title = book.title.clone();
                             let og_desc = description.clone();
-                            let og_url = format!("https://bilbo.example.com/book/{}", book.ref_id);
+                            let og_url = format!("https://bilbo.example.com/book/{}", book.reference);
                             let authors_str = book.authors.join(", ");
                             let editor_str = book.editor.clone().unwrap_or_default();
                             let edition_date_str = book.edition_date.clone().unwrap_or_default();
@@ -56,29 +58,26 @@ pub fn BookDetailPage() -> impl IntoView {
                                         {book.isbn.clone().map(|isbn| view! { <p><strong>"ISBN : "</strong>{isbn}</p> })}
                                         {book.ean.clone().map(|ean| view! { <p><strong>"EAN : "</strong>{ean}</p> })}
 
-                                        <ResellerLinks
-                                            paper_urls=book.reseller_paper_urls.clone()
-                                            digital_urls=book.reseller_digital_urls.clone()
-                                        />
+                                        <ResellerLinks urls=book.reseller_urls.clone() />
 
                                         {book.summary.clone().map(|s| view! {
                                             <div class="book-summary">
                                                 <h2>"Résumé"</h2>
-                                                <p>{s}</p>
+                                                <div inner_html=s></div>
                                             </div>
                                         })}
 
                                         {book.introduction.clone().map(|intro| view! {
                                             <div class="book-introduction">
                                                 <h2>"Introduction"</h2>
-                                                <p>{intro}</p>
+                                                <div inner_html=intro></div>
                                             </div>
                                         })}
 
                                         {book.cover_text.clone().map(|ct| view! {
                                             <div class="book-cover-text">
                                                 <h2>"Quatrième de couverture"</h2>
-                                                <p>{ct}</p>
+                                                <div inner_html=ct></div>
                                             </div>
                                         })}
 
@@ -88,22 +87,17 @@ pub fn BookDetailPage() -> impl IntoView {
                                                     <h2>"Résumés des chapitres"</h2>
                                                     {book.chapter_summaries.iter().map(|cs| {
                                                         let title = cs.title.clone().unwrap_or_else(|| format!("Chapitre {}", cs.chapter_idx + 1));
-                                                        let summary = cs.summary.clone();
+                                                        let summary_html = cs.summary.clone();
                                                         view! {
                                                             <div class="chapter">
                                                                 <h3>{title}</h3>
-                                                                <p>{summary}</p>
+                                                                <div inner_html=summary_html></div>
                                                             </div>
                                                         }
                                                     }).collect_view()}
                                                 </div>
                                             }
                                         })}
-
-                                        <div class="book-content">
-                                            <h2>"Contenu"</h2>
-                                            <div class="content-body">{book.content.clone()}</div>
-                                        </div>
                                     </article>
                                 </div>
                             }.into_any()
@@ -120,6 +114,20 @@ pub fn BookDetailPage() -> impl IntoView {
             }}
         </Suspense>
     }
+}
+
+fn strip_html_tags(html: &str) -> String {
+    let mut result = String::new();
+    let mut in_tag = false;
+    for c in html.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => result.push(c),
+            _ => {}
+        }
+    }
+    result
 }
 
 fn build_json_ld(book: &crate::model::book::BookDetail) -> String {
@@ -139,7 +147,7 @@ fn build_json_ld(book: &crate::model::book::BookDetail) -> String {
         "@type": "Book",
         "name": book.title,
         "author": authors_json,
-        "url": format!("https://bilbo.example.com/book/{}", book.ref_id),
+        "url": format!("https://bilbo.example.com/book/{}", book.reference),
     });
 
     if let Some(isbn) = &book.isbn {
@@ -152,24 +160,20 @@ fn build_json_ld(book: &crate::model::book::BookDetail) -> String {
         });
     }
     if let Some(summary) = &book.summary {
-        ld["description"] = serde_json::json!(summary);
+        ld["description"] = serde_json::json!(strip_html_tags(summary));
     }
 
     let mut offers: Vec<serde_json::Value> = Vec::new();
-    for url in &book.reseller_paper_urls {
-        offers.push(serde_json::json!({
+    for ru in &book.reseller_urls {
+        let mut offer = serde_json::json!({
             "@type": "Offer",
-            "url": url,
+            "url": ru.url,
             "availability": "https://schema.org/InStock",
-            "itemCondition": "https://schema.org/NewCondition"
-        }));
-    }
-    for url in &book.reseller_digital_urls {
-        offers.push(serde_json::json!({
-            "@type": "Offer",
-            "url": url,
-            "availability": "https://schema.org/InStock"
-        }));
+        });
+        if ru.kind == "paper" {
+            offer["itemCondition"] = serde_json::json!("https://schema.org/NewCondition");
+        }
+        offers.push(offer);
     }
     if !offers.is_empty() {
         ld["offers"] = serde_json::json!(offers);

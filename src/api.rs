@@ -5,15 +5,15 @@ use crate::model::book::{BookDetail, BookSearchResult, ChatMessage, ChatRole, Ch
 
 #[server]
 pub async fn search_books(
-    query: String,
-    tags: Vec<String>,
-    author: Option<String>,
-    page: i64,
-    page_size: i64,
+    #[server(default)] query: String,
+    #[server(default)] tags: Vec<String>,
+    #[server(default)] author: Option<String>,
+    #[server(default)] page: i64,
+    #[server(default)] page_size: i64,
 ) -> Result<(Vec<BookSearchResult>, i64), ServerFnError> {
     let state = expect_context::<crate::server::state::AppState>();
     let tags_filter = if tags.is_empty() { vec![] } else { tags };
-    let (books, total) = crate::server::db::search_books_fts(
+    let (mut books, total) = crate::server::db::search_books_fts(
         &state.pool,
         &query,
         &tags_filter,
@@ -24,78 +24,49 @@ pub async fn search_books(
     .await
     .map_err(|e| ServerFnError::new(e.to_string()))?;
 
-    Ok((books, total))
-}
+    // On page 0, boost with semantic results if query is non-empty and Mistral is configured
+    let query_trimmed = query.trim();
+    if page == 0 && !query_trimmed.is_empty() && !state.mistral_api_key.is_empty() {
+        let semantic_results = crate::server::search::semantic_boost(
+            &state,
+            query_trimmed,
+            &tags_filter,
+            author.as_deref(),
+            10,
+        )
+        .await;
 
-#[server]
-pub async fn semantic_search(
-    query: String,
-    tags: Vec<String>,
-    limit: u64,
-) -> Result<Vec<BookSearchResult>, ServerFnError> {
-    let state = expect_context::<crate::server::state::AppState>();
+        let fts_refs: std::collections::HashSet<String> =
+            books.iter().map(|b| b.reference.clone()).collect();
 
-    if state.mistral_api_key.is_empty() {
-        return Err(ServerFnError::new("Mistral API key not configured"));
-    }
-
-    let embeddings = crate::server::mistral::embed_texts(
-        &state.http_client,
-        &state.mistral_api_key,
-        &[query],
-    )
-    .await
-    .map_err(|e| ServerFnError::new(e))?;
-
-    let query_embedding = embeddings
-        .into_iter()
-        .next()
-        .ok_or_else(|| ServerFnError::new("no embedding returned"))?;
-
-    let results = crate::server::qdrant::search_similar(
-        &state.qdrant,
-        query_embedding,
-        &tags,
-        limit,
-    )
-    .await
-    .map_err(|e| ServerFnError::new(e.to_string()))?;
-
-    let mut seen = std::collections::HashSet::new();
-    let mut books = Vec::new();
-
-    for result in results {
-        if seen.insert(result.ref_id.clone()) {
-            let book = crate::server::db::get_book_by_ref_id(&state.pool, &result.ref_id)
-                .await
-                .map_err(|e| ServerFnError::new(e.to_string()))?;
-
-            if let Some(b) = book {
-                books.push(BookSearchResult {
-                    id: b.id,
-                    ref_id: b.ref_id,
-                    title: b.title,
-                    authors: b.authors,
-                    tags: b.tags,
-                    editor: b.editor,
-                    edition_date: b.edition_date,
-                    summary: b.summary,
-                });
+        for book in semantic_results {
+            if !fts_refs.contains(&book.reference) {
+                books.push(book);
             }
         }
     }
 
-    Ok(books)
+    Ok((books, total))
 }
 
 #[server]
-pub async fn get_book(ref_id: String) -> Result<Option<BookDetail>, ServerFnError> {
+pub async fn get_book(reference: String) -> Result<Option<BookDetail>, ServerFnError> {
+    use crate::server::markdown::markdown_to_html;
+
     let state = expect_context::<crate::server::state::AppState>();
-    let book = crate::server::db::get_book_by_ref_id(&state.pool, &ref_id)
+    let book = crate::server::db::get_book_by_reference(&state.pool, &reference)
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
 
-    Ok(book)
+    Ok(book.map(|mut b| {
+        b.summary = b.summary.map(|s| markdown_to_html(&s));
+        b.introduction = b.introduction.map(|s| markdown_to_html(&s));
+        b.cover_text = b.cover_text.map(|s| markdown_to_html(&s));
+        for cs in &mut b.chapter_summaries {
+            cs.summary = markdown_to_html(&cs.summary);
+        }
+        b
+    }))
 }
 
 #[server]
@@ -129,6 +100,7 @@ pub async fn chat(messages: Vec<ChatMessage>) -> Result<ChatMessage, ServerFnErr
         &state.qdrant,
         query_embedding,
         &[],
+        None,
         5,
     )
     .await
@@ -142,7 +114,7 @@ pub async fn chat(messages: Vec<ChatMessage>) -> Result<ChatMessage, ServerFnErr
                 "[Source {}: {} - {}]\n{}\n",
                 i + 1,
                 r.title,
-                r.ref_id,
+                r.reference,
                 r.chunk_text
             )
         })
@@ -151,7 +123,7 @@ pub async fn chat(messages: Vec<ChatMessage>) -> Result<ChatMessage, ServerFnErr
     let sources: Vec<ChatSource> = results
         .iter()
         .map(|r| ChatSource {
-            ref_id: r.ref_id.clone(),
+            reference: r.reference.clone(),
             title: r.title.clone(),
             chunk_text: r.chunk_text.chars().take(200).collect(),
         })
@@ -177,9 +149,11 @@ pub async fn chat(messages: Vec<ChatMessage>) -> Result<ChatMessage, ServerFnErr
     .await
     .map_err(|e| ServerFnError::new(e))?;
 
+    let html_response = crate::server::markdown::markdown_to_html(&response);
+
     Ok(ChatMessage {
         role: ChatRole::Assistant,
-        content: response,
+        content: html_response,
         sources,
     })
 }

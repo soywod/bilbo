@@ -52,11 +52,11 @@ async fn import_file(state: &AppState, path: &Path) -> Result<(), Box<dyn std::e
     let fm = &parsed.frontmatter;
 
     // Check if book already exists
-    let existing = db::find_book_by_ref_id(&state.pool, &fm.id).await?;
+    let existing = db::find_book_by_reference(&state.pool, &fm.reference).await?;
 
     match existing {
         Some((_id, ref existing_hash)) if existing_hash == &parsed.hash => {
-            tracing::info!("book {} unchanged, skipping", fm.id);
+            tracing::info!("book {} unchanged, skipping", fm.reference);
             return Ok(());
         }
         _ => {}
@@ -83,7 +83,7 @@ async fn import_file(state: &AppState, path: &Path) -> Result<(), Box<dyn std::e
         Some(_) => {
             db::update_book(
                 &state.pool,
-                &fm.id,
+                &fm.reference,
                 &parsed.hash,
                 &fm.title,
                 &fm.authors,
@@ -104,7 +104,7 @@ async fn import_file(state: &AppState, path: &Path) -> Result<(), Box<dyn std::e
         None => {
             db::insert_book(
                 &state.pool,
-                &fm.id,
+                &fm.reference,
                 &parsed.hash,
                 &fm.title,
                 &fm.authors,
@@ -188,7 +188,7 @@ async fn import_file(state: &AppState, path: &Path) -> Result<(), Box<dyn std::e
         qdrant::upsert_chunks(
             &state.qdrant,
             book_id,
-            &fm.id,
+            &fm.reference,
             &fm.title,
             &fm.authors,
             &fm.tags,
@@ -198,6 +198,6 @@ async fn import_file(state: &AppState, path: &Path) -> Result<(), Box<dyn std::e
         .await?;
     }
 
-    tracing::info!("imported book {} ({})", fm.id, fm.title);
+    tracing::info!("imported book {} ({})", fm.reference, fm.title);
     Ok(())
 }

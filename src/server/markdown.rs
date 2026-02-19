@@ -1,11 +1,11 @@
 use gray_matter::{engine::YAML, Matter};
-use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
+use pulldown_cmark::{html, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 #[derive(Debug, Deserialize)]
 pub struct BookFrontmatter {
-    pub id: String,
+    pub reference: String,
     pub title: String,
     #[serde(default)]
     pub authors: Vec<String>,
@@ -162,4 +162,12 @@ pub fn chunk_text(chapters: &[Chapter]) -> Vec<Chunk> {
     }
 
     chunks
+}
+
+/// Convert a markdown string to HTML.
+pub fn markdown_to_html(md: &str) -> String {
+    let parser = Parser::new_ext(md, Options::empty());
+    let mut html_output = String::new();
+    html::push_html(&mut html_output, parser);
+    html_output
 }

@@ -42,7 +42,7 @@ pub fn App() -> impl IntoView {
             <Layout>
                 <Routes fallback=|| view! { <p>"Page non trouvée."</p> }>
                     <Route path=path!("/") view=HomePage />
-                    <Route path=path!("/book/:ref_id") view=BookDetailPage />
+                    <Route path=path!("/book/:reference") view=BookDetailPage />
                     <Route path=path!("/chat") view=ChatPage />
                 </Routes>
             </Layout>

@@ -28,11 +28,11 @@ pub fn BookTable(
             <tbody>
                 {move || {
                     books.get().into_iter().map(|book| {
-                        let ref_id = book.ref_id.clone();
+                        let reference = book.reference.clone();
                         view! {
                             <tr>
                                 <td>
-                                    <a href=format!("/book/{ref_id}")>{book.title}</a>
+                                    <a href=format!("/book/{reference}")>{book.title}</a>
                                 </td>
                                 <td>{book.authors.join(", ")}</td>
                                 <td>{book.editor.unwrap_or_default()}</td>

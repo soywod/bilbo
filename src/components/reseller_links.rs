@@ -1,15 +1,15 @@
 use leptos::prelude::*;
 
-#[component]
-pub fn ResellerLinks(
-    paper_urls: Vec<String>,
-    digital_urls: Vec<String>,
-) -> impl IntoView {
-    let has_links = !paper_urls.is_empty() || !digital_urls.is_empty();
+use crate::model::book::ResellerUrl;
 
-    if !has_links {
+#[component]
+pub fn ResellerLinks(urls: Vec<ResellerUrl>) -> impl IntoView {
+    if urls.is_empty() {
         return view! { <div></div> }.into_any();
     }
+
+    let paper_urls: Vec<_> = urls.iter().filter(|u| u.kind == "paper").cloned().collect();
+    let digital_urls: Vec<_> = urls.iter().filter(|u| u.kind == "digital").cloned().collect();
 
     view! {
         <div class="reseller-links">
@@ -18,10 +18,10 @@ pub fn ResellerLinks(
                 Some(view! {
                     <div class="link-group">
                         <span>"Format papier : "</span>
-                        {paper_urls.into_iter().enumerate().map(|(i, url)| {
+                        {paper_urls.into_iter().enumerate().map(|(i, ru)| {
                             let label = format!("Revendeur {}", i + 1);
                             view! {
-                                <a href=url target="_blank" rel="noopener noreferrer">{label}</a>
+                                <a href=ru.url target="_blank" rel="noopener noreferrer">{label}</a>
                             }
                         }).collect_view()}
                     </div>
@@ -33,10 +33,10 @@ pub fn ResellerLinks(
                 Some(view! {
                     <div class="link-group">
                         <span>"Format numérique : "</span>
-                        {digital_urls.into_iter().enumerate().map(|(i, url)| {
+                        {digital_urls.into_iter().enumerate().map(|(i, ru)| {
                             let label = format!("Revendeur {}", i + 1);
                             view! {
-                                <a href=url target="_blank" rel="noopener noreferrer">{label}</a>
+                                <a href=ru.url target="_blank" rel="noopener noreferrer">{label}</a>
                             }
                         }).collect_view()}
                     </div>

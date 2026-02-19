@@ -67,7 +67,7 @@ pub async fn delete_book_points(
 pub async fn upsert_chunks(
     client: &Qdrant,
     book_id: Uuid,
-    ref_id: &str,
+    reference: &str,
     title: &str,
     authors: &[String],
     tags: &[String],
@@ -82,7 +82,7 @@ pub async fn upsert_chunks(
         let point_id = Uuid::new_v4();
         let payload = json!({
             "book_id": book_id.to_string(),
-            "ref_id": ref_id,
+            "reference": reference,
             "title": title,
             "chunk_index": chunk_index,
             "chunk_text": text,
@@ -123,7 +123,7 @@ pub async fn upsert_chunks(
 }
 
 pub struct SearchResult {
-    pub ref_id: String,
+    pub reference: String,
     pub title: String,
     pub chunk_text: String,
     pub score: f32,
@@ -133,18 +133,23 @@ pub async fn search_similar(
     client: &Qdrant,
     query_embedding: Vec<f32>,
     tags: &[String],
+    author: Option<&str>,
     limit: u64,
 ) -> Result<Vec<SearchResult>, qdrant_client::QdrantError> {
     let mut search = SearchPointsBuilder::new(COLLECTION_NAME, query_embedding, limit)
         .with_payload(true);
 
-    if !tags.is_empty() {
-        let filter = Filter::must(
-            tags.iter()
-                .map(|t| Condition::matches("tags", t.clone()))
-                .collect::<Vec<_>>(),
-        );
-        search = search.filter(filter);
+    let mut conditions: Vec<Condition> = tags
+        .iter()
+        .map(|t| Condition::matches("tags", t.clone()))
+        .collect();
+
+    if let Some(a) = author {
+        conditions.push(Condition::matches("authors", a.to_string()));
+    }
+
+    if !conditions.is_empty() {
+        search = search.filter(Filter::must(conditions));
     }
 
     let results = client.search_points(search).await?;
@@ -152,8 +157,8 @@ pub async fn search_similar(
     let mut search_results = Vec::new();
     for point in results.result {
         let payload = &point.payload;
-        let ref_id = payload
-            .get("ref_id")
+        let reference = payload
+            .get("reference")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .unwrap_or_default();
@@ -169,7 +174,7 @@ pub async fn search_similar(
             .unwrap_or_default();
 
         search_results.push(SearchResult {
-            ref_id,
+            reference,
             title,
             chunk_text,
             score: point.score,

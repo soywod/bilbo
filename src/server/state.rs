@@ -27,7 +27,13 @@ impl AppState {
 
         sqlx::migrate!().run(&pool).await?;
 
-        let qdrant = Qdrant::from_url(&qdrant_url).build()?;
+        let mut qdrant_builder = Qdrant::from_url(&qdrant_url);
+        if let Ok(api_key) = std::env::var("QDRANT_API_KEY") {
+            if !api_key.is_empty() {
+                qdrant_builder = qdrant_builder.api_key(api_key);
+            }
+        }
+        let qdrant = qdrant_builder.build()?;
 
         let http_client = reqwest::Client::new();
 

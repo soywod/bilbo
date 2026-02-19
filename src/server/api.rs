@@ -2,7 +2,7 @@
 pub async fn sitemap_handler(
     axum::extract::State(state): axum::extract::State<super::state::AppState>,
 ) -> impl axum::response::IntoResponse {
-    let books = super::db::list_all_book_refs(&state.pool)
+    let books = super::db::list_all_book_references(&state.pool)
         .await
         .unwrap_or_default();
 
@@ -20,9 +20,9 @@ pub async fn sitemap_handler(
 "#,
     );
 
-    for (ref_id, _title) in &books {
+    for (reference, _title) in &books {
         xml.push_str(&format!(
-            "  <url>\n    <loc>https://bilbo.example.com/book/{ref_id}</loc>\n    <priority>0.8</priority>\n  </url>\n"
+            "  <url>\n    <loc>https://bilbo.example.com/book/{reference}</loc>\n    <priority>0.8</priority>\n  </url>\n"
         ));
     }
 

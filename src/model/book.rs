@@ -4,7 +4,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BookSearchResult {
     pub id: Uuid,
-    pub ref_id: String,
+    pub reference: String,
     pub title: String,
     pub authors: Vec<String>,
     pub tags: Vec<String>,
@@ -16,7 +16,7 @@ pub struct BookSearchResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BookDetail {
     pub id: Uuid,
-    pub ref_id: String,
+    pub reference: String,
     pub title: String,
     pub authors: Vec<String>,
     pub editor: Option<String>,
@@ -27,10 +27,14 @@ pub struct BookDetail {
     pub cover_text: Option<String>,
     pub ean: Option<String>,
     pub isbn: Option<String>,
-    pub content: String,
-    pub reseller_paper_urls: Vec<String>,
-    pub reseller_digital_urls: Vec<String>,
+    pub reseller_urls: Vec<ResellerUrl>,
     pub chapter_summaries: Vec<ChapterSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResellerUrl {
+    pub url: String,
+    pub kind: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,7 +61,7 @@ pub enum ChatRole {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatSource {
-    pub ref_id: String,
+    pub reference: String,
     pub title: String,
     pub chunk_text: String,
 }

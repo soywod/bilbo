@@ -94,11 +94,17 @@ pub async fn generate_summary(
     api_key: &str,
     text: &str,
 ) -> Result<String, String> {
+    let system = "Tu es un assistant qui rédige des résumés factuels de livres. \
+        Tes résumés doivent être objectifs et concis. \
+        Ne commence jamais par des phrases comme « Voici un résumé », « Ce texte parle de », etc. \
+        Commence directement par le contenu du résumé. \
+        Maximum 5 phrases.";
+
     let prompt = format!(
-        "Résume le texte suivant en français en 2-3 paragraphes concis :\n\n{text}"
+        "Résume le texte suivant en français en 5 phrases maximum :\n\n{text}"
     );
 
-    chat_completion(client, api_key, &[("user", &prompt)]).await
+    chat_completion(client, api_key, &[("system", system), ("user", &prompt)]).await
 }
 
 /// Generate chapter summaries for a list of chapters.
@@ -107,6 +113,12 @@ pub async fn generate_chapter_summaries(
     api_key: &str,
     chapters: &[(Option<String>, String)],
 ) -> Result<Vec<String>, String> {
+    let system = "Tu es un assistant qui rédige des résumés factuels de chapitres de livres. \
+        Tes résumés doivent être objectifs et concis. \
+        Ne commence jamais par des phrases comme « Voici un résumé », « Ce chapitre parle de », etc. \
+        Commence directement par le contenu du résumé. \
+        Maximum 3 phrases.";
+
     let mut summaries = Vec::new();
 
     for (title, text) in chapters {
@@ -117,15 +129,15 @@ pub async fn generate_chapter_summaries(
 
         let chapter_label = title
             .as_deref()
-            .map(|t| format!("Chapitre \"{t}\""))
-            .unwrap_or_else(|| "Ce chapitre".to_string());
+            .map(|t| format!("le chapitre \"{t}\""))
+            .unwrap_or_else(|| "ce chapitre".to_string());
 
         let prompt = format!(
-            "Résume {chapter_label} en 2-3 phrases en français :\n\n{}",
+            "Résume {chapter_label} en 3 phrases maximum en français :\n\n{}",
             &text[..text.len().min(4000)]
         );
 
-        let summary = chat_completion(client, api_key, &[("user", &prompt)]).await?;
+        let summary = chat_completion(client, api_key, &[("system", system), ("user", &prompt)]).await?;
         summaries.push(summary);
     }
 

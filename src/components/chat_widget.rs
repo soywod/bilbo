@@ -32,18 +32,23 @@ pub fn ChatWidget(
                         ChatRole::Assistant => "Bilbo",
                     };
                     let content = msg.content.clone();
+                    let is_assistant = msg.role == ChatRole::Assistant;
                     let sources = msg.sources.clone();
 
                     view! {
                         <div class=role_class>
                             <div class="message-role">{role_label}</div>
-                            <div class="message-content">{content}</div>
+                            {if is_assistant {
+                                view! { <div class="message-content" inner_html=content></div> }.into_any()
+                            } else {
+                                view! { <div class="message-content">{content}</div> }.into_any()
+                            }}
                             {(!sources.is_empty()).then(|| {
                                 view! {
                                     <div class="message-sources">
                                         <strong>"Sources : "</strong>
                                         {sources.iter().map(|s| {
-                                            let href = format!("/book/{}", s.ref_id);
+                                            let href = format!("/book/{}", s.reference);
                                             let title = s.title.clone();
                                             view! {
                                                 <a href=href>{title}</a>
