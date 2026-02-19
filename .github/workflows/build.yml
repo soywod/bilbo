@@ -4,15 +4,6 @@ on:
   push:
     branches: [master]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,27 +17,20 @@ jobs:
           name: soywod
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
-      - name: Build release
+      - name: Build frontend
         run: nix develop --command cargo leptos build --release
 
-      - name: Upload server binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: bilbo-server
-          path: target/server/release/bilbo
+      - name: Build static server binary
+        run: nix build
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: target/site/
+      - name: Package release
+        run: |
+          mkdir -p release
+          cp result/bin/bilbo release/
+          cp -r target/site release/
+          tar czf bilbo-release.tar.gz -C release .
 
-  deploy-pages:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bilbo-release
+          path: bilbo-release.tar.gz
