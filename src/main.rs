@@ -5,7 +5,6 @@ async fn main() {
     use bilbo::app::App;
     use bilbo::server::state::AppState;
     use clap::Parser;
-    use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use tower_http::services::ServeDir;
     use tracing_subscriber;
@@ -22,7 +21,22 @@ async fn main() {
 
     let cli = Cli::parse();
 
-    let state = AppState::new().await.expect("failed to initialize app state");
+    let site_root = std::env::var("LEPTOS_SITE_ROOT").unwrap_or_else(|_| "target/site".into());
+    let site_addr: std::net::SocketAddr = std::env::var("LEPTOS_SITE_ADDR")
+        .unwrap_or_else(|_| "0.0.0.0:3000".into())
+        .parse()
+        .expect("invalid LEPTOS_SITE_ADDR");
+    let leptos_options = leptos::config::LeptosOptions::builder()
+        .output_name(std::sync::Arc::<str>::from("bilbo"))
+        .site_root(std::sync::Arc::<str>::from(site_root))
+        .site_pkg_dir(std::sync::Arc::<str>::from("pkg"))
+        .env(leptos::config::Env::PROD)
+        .site_addr(site_addr)
+        .reload_port(3001)
+        .build();
+    let addr = leptos_options.site_addr;
+
+    let state = AppState::new(leptos_options.clone()).await.expect("failed to initialize app state");
 
     if cli.import {
         tracing::info!("starting import pipeline");
@@ -31,10 +45,6 @@ async fn main() {
             .expect("import failed");
         tracing::info!("import complete");
     }
-
-    let conf = get_configuration(None).unwrap();
-    let leptos_options = conf.leptos_options;
-    let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
 
     let app = Router::new()

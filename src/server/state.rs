@@ -9,10 +9,11 @@ pub struct AppState {
     pub qdrant: Arc<Qdrant>,
     pub http_client: reqwest::Client,
     pub mistral_api_key: String,
+    pub leptos_options: leptos::config::LeptosOptions,
 }
 
 impl AppState {
-    pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(leptos_options: leptos::config::LeptosOptions) -> Result<Self, Box<dyn std::error::Error>> {
         let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
         let qdrant_url =
             std::env::var("QDRANT_URL").unwrap_or_else(|_| "http://localhost:6334".to_string());
@@ -42,15 +43,14 @@ impl AppState {
             qdrant: Arc::new(qdrant),
             http_client,
             mistral_api_key,
+            leptos_options,
         })
     }
 }
 
 impl axum::extract::FromRef<AppState> for leptos::config::LeptosOptions {
-    fn from_ref(_state: &AppState) -> Self {
-        leptos::prelude::get_configuration(None)
-            .unwrap()
-            .leptos_options
+    fn from_ref(state: &AppState) -> Self {
+        state.leptos_options.clone()
     }
 }
 

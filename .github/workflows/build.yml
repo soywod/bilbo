@@ -22,14 +22,13 @@ jobs:
       - name: Build frontend
         run: nix develop --command cargo leptos build --release
 
-      - name: Build static server binary
-        run: nix build
-
       - name: Package release
         run: |
           mkdir -p release
-          cp result/bin/bilbo release/
+          cp target/release/bilbo release/
+          nix develop --command patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 --set-rpath /lib/x86_64-linux-gnu release/bilbo
           cp -r target/site release/
+          cp release/site/pkg/bilbo.wasm release/site/pkg/bilbo_bg.wasm
           tar czf bilbo-release.tar.gz -C release .
 
       - uses: actions/upload-artifact@v4
