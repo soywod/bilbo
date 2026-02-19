@@ -12,7 +12,11 @@ pub fn BookTable(
 ) -> impl IntoView {
     let total_pages = move || {
         let t = total.get();
-        if t == 0 { 1 } else { (t + page_size - 1) / page_size }
+        if t == 0 {
+            1
+        } else {
+            (t + page_size - 1) / page_size
+        }
     };
 
     view! {
@@ -55,7 +59,7 @@ pub fn BookTable(
             <span>{move || format!("Page {} / {}", page.get() + 1, total_pages())}</span>
             <button
                 on:click=move |_| page.update(|p| *p += 1)
-                disabled=move || page.get() + 1 >= total_pages()
+                disabled=move || { page.get() + 1 >= total_pages() }
             >
                 "Suivant"
             </button>
