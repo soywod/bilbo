@@ -34,3 +34,24 @@ jobs:
         with:
           name: bilbo-release
           path: bilbo-release.tar.gz
+
+      - name: Deploy to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: bilbo-release.tar.gz
+          target: /home/debian/bilbo
+
+      - name: Extract and restart
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/debian/bilbo
+            tar xzf bilbo-release.tar.gz
+            rm bilbo-release.tar.gz
+            systemctl --user restart bilbo
