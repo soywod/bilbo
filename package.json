@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.6",
+    "@astrojs/netlify": "^6.6.4",
     "@astrojs/preact": "^4.1.1",
-    "@astrojs/vercel": "^8.1.4",
     "@qdrant/js-client-rest": "^1.13.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
@@ -23,7 +23,6 @@
     "preact": "^10.26.5"
   },
   "devDependencies": {
-    "@vercel/node": "^5.1.8",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",
     "sass": "^1.86.0",

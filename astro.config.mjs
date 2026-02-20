@@ -1,10 +1,10 @@
 import { defineConfig } from "astro/config";
 import preact from "@astrojs/preact";
-import vercel from "@astrojs/vercel";
+import netlify from "@astrojs/netlify";
 
 export default defineConfig({
   output: "static",
-  adapter: vercel(),
+  adapter: netlify(),
   integrations: [preact()],
   vite: {
     css: {
