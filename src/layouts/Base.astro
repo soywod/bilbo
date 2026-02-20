@@ -1,0 +1,59 @@
+---
+import "../styles/main.scss";
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogType?: string;
+  ogUrl?: string;
+  jsonLd?: string;
+}
+
+const {
+  title = "Bilbo — Bibliothèque numérique",
+  description = "Bibliothèque numérique publique. Recherchez et consultez des livres numérisés.",
+  ogTitle,
+  ogDescription,
+  ogType,
+  ogUrl,
+  jsonLd,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {ogTitle && <meta property="og:title" content={ogTitle} />}
+    {
+      ogDescription && (
+        <meta property="og:description" content={ogDescription} />
+      )
+    }
+    {ogType && <meta property="og:type" content={ogType} />}
+    {ogUrl && <meta property="og:url" content={ogUrl} />}
+    {jsonLd && <script type="application/ld+json" set:html={jsonLd} />}
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="/" class="logo">Bilbo</a>
+        <nav>
+          <a href="/">Recherche</a>
+          <a href="/chat">Chat</a>
+        </nav>
+      </div>
+    </header>
+    <main class="site-main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>Bilbo — Bibliothèque numérique publique</p>
+    </footer>
+  </body>
+</html>

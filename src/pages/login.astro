@@ -1,0 +1,65 @@
+---
+export const prerender = false;
+
+import Base from "../layouts/Base.astro";
+import { createSupabaseServer } from "../lib/supabase";
+
+const supabase = createSupabaseServer(Astro.request, Astro.cookies);
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (user) {
+  return Astro.redirect("/chat");
+}
+---
+
+<Base
+  title="Connexion — Bilbo"
+  description="Connectez-vous pour accéder au chat Bilbo."
+>
+  <div class="login-page">
+    <h1>Connexion</h1>
+    <p>Connectez-vous pour accéder au chat avec Bilbo.</p>
+    <form id="login-form" class="login-form">
+      <input type="email" id="email" placeholder="Adresse email" required />
+      <input
+        type="password"
+        id="password"
+        placeholder="Mot de passe"
+        required
+      />
+      <button type="submit">Se connecter</button>
+      <p id="error-msg" class="login-error" style="display:none;"></p>
+    </form>
+  </div>
+</Base>
+
+<script>
+  import { createSupabaseBrowser } from "../lib/supabase";
+
+  const form = document.getElementById("login-form") as HTMLFormElement;
+  const errorMsg = document.getElementById("error-msg") as HTMLParagraphElement;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorMsg.style.display = "none";
+
+    const email = (document.getElementById("email") as HTMLInputElement).value;
+    const password = (document.getElementById("password") as HTMLInputElement)
+      .value;
+
+    const supabase = createSupabaseBrowser();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      errorMsg.textContent = error.message;
+      errorMsg.style.display = "block";
+    } else {
+      window.location.href = "/chat";
+    }
+  });
+</script>
