@@ -43,11 +43,17 @@ export const POST: APIRoute = async ({ request }) => {
       )
       .join("");
 
-    const sources: ChatSource[] = results.map((r) => ({
-      reference: r.reference,
-      title: r.title,
-      chunk_text: r.chunk_text.slice(0, 200),
-    }));
+    const seen = new Set<string>();
+    const sources: ChatSource[] = [];
+    for (const r of results) {
+      if (seen.has(r.reference)) continue;
+      seen.add(r.reference);
+      sources.push({
+        reference: r.reference,
+        title: r.title,
+        chunk_text: r.chunk_text.slice(0, 200),
+      });
+    }
 
     const chatMessages = messages.map((m) => ({
       role: m.role,

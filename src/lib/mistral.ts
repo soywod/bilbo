@@ -118,8 +118,9 @@ export async function ragChat(
   messages: { role: string; content: string }[],
 ): Promise<string> {
   const systemPrompt =
-    "Tu es un assistant bibliothécaire. Réponds aux questions en te basant sur les extraits de livres suivants. " +
-    "Cite tes sources quand c'est pertinent. Si tu ne trouves pas la réponse dans les extraits, dis-le.\n\n" +
+    "Tu es un assistant bibliothécaire. Tu dois répondre UNIQUEMENT à partir des extraits de livres fournis ci-dessous. " +
+    "N'utilise JAMAIS tes connaissances générales. Si la réponse ne se trouve pas dans les extraits, dis simplement que tu ne disposes pas de cette information dans la bibliothèque. " +
+    "Cite les titres des livres quand c'est pertinent.\n\n" +
     `Extraits :\n${context}`;
 
   return chatCompletion([
