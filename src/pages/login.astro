@@ -10,17 +10,17 @@ const {
 } = await supabase.auth.getUser();
 
 if (user) {
-  return Astro.redirect("/chat");
+  return Astro.redirect("/discussion");
 }
 ---
 
 <Base
   title="Connexion — Bilbo"
-  description="Connectez-vous pour accéder au chat Bilbo."
+  description="Connectez-vous pour accéder à la discussion IA Bilbo."
 >
   <div class="login-page">
     <h1>Connexion</h1>
-    <p>Connectez-vous pour accéder au chat avec Bilbo.</p>
+    <p>Connectez-vous pour accéder à la discussion IA avec Bilbo.</p>
     <form id="login-form" class="login-form">
       <input type="email" id="email" placeholder="Adresse email" required />
       <input
@@ -59,7 +59,7 @@ if (user) {
       errorMsg.textContent = error.message;
       errorMsg.style.display = "block";
     } else {
-      window.location.href = "/chat";
+      window.location.href = "/discussion";
     }
   });
 </script>

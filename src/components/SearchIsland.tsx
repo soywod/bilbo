@@ -67,7 +67,7 @@ export default function SearchIsland() {
 
   return (
     <div>
-      <h1>Rechercher des livres</h1>
+      <h1>Recherche par mots-clés</h1>
 
       <div class="search-section">
         <form class="search-bar" onSubmit={onSubmit}>

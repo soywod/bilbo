@@ -37,13 +37,13 @@ export interface ChapterSummary {
   summary: string;
 }
 
-export interface ChatMessage {
+export interface DiscussionMessage {
   role: "user" | "assistant";
   content: string;
-  sources: ChatSource[];
+  sources: DiscussionSource[];
 }
 
-export interface ChatSource {
+export interface DiscussionSource {
   reference: string;
   title: string;
   chunk_text: string;

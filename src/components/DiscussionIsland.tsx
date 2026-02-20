@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "preact/hooks";
-import type { ChatMessage, ChatSource } from "../lib/types";
+import type { DiscussionMessage, DiscussionSource } from "../lib/types";
 
-export default function ChatIsland() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export default function DiscussionIsland() {
+  const [messages, setMessages] = useState<DiscussionMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -16,7 +16,7 @@ export default function ChatIsland() {
     const msg = input.trim();
     if (!msg) return;
 
-    const userMsg: ChatMessage = {
+    const userMsg: DiscussionMessage = {
       role: "user",
       content: msg,
       sources: [],
@@ -28,7 +28,7 @@ export default function ChatIsland() {
     setLoading(true);
 
     try {
-      const resp = await fetch("/api/chat", {
+      const resp = await fetch("/api/discussion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updated }),
@@ -36,7 +36,7 @@ export default function ChatIsland() {
 
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      const reply: ChatMessage = await resp.json();
+      const reply: DiscussionMessage = await resp.json();
       setMessages([...updated, reply]);
     } catch (e) {
       setMessages([
@@ -54,11 +54,11 @@ export default function ChatIsland() {
 
   return (
     <div>
-      <div class="chat-messages">
+      <div class="discussion-messages">
         {messages.map((msg, i) => (
           <div
             key={i}
-            class={`chat-message ${msg.role === "user" ? "user" : "assistant"}`}
+            class={`discussion-message ${msg.role === "user" ? "user" : "assistant"}`}
           >
             <div class="message-role">
               {msg.role === "user" ? "Vous" : "Bilbo"}
@@ -74,7 +74,7 @@ export default function ChatIsland() {
             {msg.sources.length > 0 && (
               <div class="message-sources">
                 <strong>Sources : </strong>
-                {msg.sources.map((s: ChatSource) => (
+                {msg.sources.map((s: DiscussionSource) => (
                   <a key={s.reference} href={`/book/${s.reference}`}>
                     {s.title}
                   </a>
@@ -84,14 +84,14 @@ export default function ChatIsland() {
           </div>
         ))}
         {loading && (
-          <div class="chat-message assistant">
+          <div class="discussion-message assistant">
             <div class="message-role">Bilbo</div>
             <div class="message-content">Réflexion en cours...</div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
-      <form class="chat-input" onSubmit={onSubmit}>
+      <form class="discussion-input" onSubmit={onSubmit}>
         <input
           type="text"
           placeholder="Posez une question sur les livres..."

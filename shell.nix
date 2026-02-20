@@ -7,6 +7,7 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     nodejs_22
+    deno
     nixd
     nixfmt-rfc-style
   ];

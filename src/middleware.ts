@@ -1,7 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 import { createSupabaseServer } from "./lib/supabase";
 
-const PROTECTED = ["/chat", "/api/chat"];
+const PROTECTED = ["/discussion", "/api/discussion"];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;

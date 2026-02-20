@@ -2,19 +2,19 @@
 export const prerender = false;
 
 import Base from "../layouts/Base.astro";
-import ChatIsland from "../components/ChatIsland";
+import DiscussionIsland from "../components/DiscussionIsland";
 
 const user = Astro.locals.user;
 ---
 
 <Base
-  title="Chat — Bilbo"
+  title="Discussion IA — Bilbo"
   description="Posez vos questions sur les livres de la bibliothèque numérique Bilbo."
 >
-  <div class="chat-page">
-    <div class="chat-header">
-      <h1>Chat avec Bilbo</h1>
-      <span class="chat-user">
+  <div class="discussion-page">
+    <div class="discussion-header">
+      <h1>Recherche par discussion IA</h1>
+      <span class="discussion-user">
         {user?.email}
         <button id="logout-btn" class="logout-btn">Déconnexion</button>
       </span>
@@ -23,7 +23,7 @@ const user = Astro.locals.user;
       Posez vos questions sur les livres de la bibliothèque. Bilbo cherchera les
       passages pertinents pour vous répondre.
     </p>
-    <ChatIsland client:load />
+    <DiscussionIsland client:load />
   </div>
 </Base>
 

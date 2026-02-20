@@ -11,7 +11,7 @@ export const GET: APIRoute = async () => {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://bilbo.example.com/chat</loc>
+    <loc>https://bilbo.example.com/discussion</loc>
     <priority>0.5</priority>
   </url>
 `;

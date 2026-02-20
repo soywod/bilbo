@@ -113,7 +113,7 @@ export async function generateChapterSummaries(
   return summaries;
 }
 
-export async function ragChat(
+export async function ragDiscussion(
   context: string,
   messages: { role: string; content: string }[],
 ): Promise<string> {

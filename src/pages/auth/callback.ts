@@ -11,5 +11,5 @@ export const GET: APIRoute = async ({ url, request, cookies, redirect }) => {
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return redirect("/chat");
+  return redirect("/discussion");
 };

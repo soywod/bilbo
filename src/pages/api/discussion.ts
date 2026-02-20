@@ -1,14 +1,15 @@
 import type { APIRoute } from "astro";
-import { embedTexts, ragChat } from "../../lib/mistral";
+import { embedTexts, ragDiscussion } from "../../lib/mistral";
 import { searchSimilar } from "../../lib/qdrant";
 import { markdownToHtml } from "../../lib/markdown";
-import type { ChatMessage, ChatSource } from "../../lib/types";
+import type { DiscussionMessage, DiscussionSource } from "../../lib/types";
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { messages }: { messages: ChatMessage[] } = await request.json();
+    const { messages }: { messages: DiscussionMessage[] } =
+      await request.json();
 
     const mistralKey = process.env.MISTRAL_API_KEY ?? "";
     if (!mistralKey) {
@@ -44,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
       .join("");
 
     const seen = new Set<string>();
-    const sources: ChatSource[] = [];
+    const sources: DiscussionSource[] = [];
     for (const r of results) {
       if (seen.has(r.reference)) continue;
       seen.add(r.reference);
@@ -55,15 +56,15 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const chatMessages = messages.map((m) => ({
+    const discussionMessages = messages.map((m) => ({
       role: m.role,
       content: m.content,
     }));
 
-    const response = await ragChat(context, chatMessages);
+    const response = await ragDiscussion(context, discussionMessages);
     const htmlResponse = markdownToHtml(response);
 
-    const reply: ChatMessage = {
+    const reply: DiscussionMessage = {
       role: "assistant",
       content: htmlResponse,
       sources,
@@ -73,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("chat error:", e);
+    console.error("discussion error:", e);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

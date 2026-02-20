@@ -1,8 +1,8 @@
 node_modules/
 dist/
-.vercel/
 .astro/
 .env
 .envrc
 .direnv/
+.netlify/
 data/
