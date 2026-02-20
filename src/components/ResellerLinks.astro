@@ -1,0 +1,39 @@
+---
+import type { ResellerUrl } from "../lib/types";
+
+interface Props {
+  urls: ResellerUrl[];
+}
+
+const { urls } = Astro.props;
+const paperUrls = urls.filter((u) => u.kind === "paper");
+const digitalUrls = urls.filter((u) => u.kind === "digital");
+---
+
+{
+  urls.length > 0 && (
+    <div class="reseller-links">
+      <h3>Acheter ce livre</h3>
+      {paperUrls.length > 0 && (
+        <div class="link-group">
+          <span>Format papier : </span>
+          {paperUrls.map((ru, i) => (
+            <a href={ru.url} target="_blank" rel="noopener noreferrer">
+              Revendeur {i + 1}
+            </a>
+          ))}
+        </div>
+      )}
+      {digitalUrls.length > 0 && (
+        <div class="link-group">
+          <span>Format numérique : </span>
+          {digitalUrls.map((ru, i) => (
+            <a href={ru.url} target="_blank" rel="noopener noreferrer">
+              Revendeur {i + 1}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

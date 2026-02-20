@@ -1,0 +1,38 @@
+---
+export const prerender = false;
+
+import Base from "../layouts/Base.astro";
+import ChatIsland from "../components/ChatIsland";
+
+const user = Astro.locals.user;
+---
+
+<Base
+  title="Chat — Bilbo"
+  description="Posez vos questions sur les livres de la bibliothèque numérique Bilbo."
+>
+  <div class="chat-page">
+    <div class="chat-header">
+      <h1>Chat avec Bilbo</h1>
+      <span class="chat-user">
+        {user?.email}
+        <button id="logout-btn" class="logout-btn">Déconnexion</button>
+      </span>
+    </div>
+    <p>
+      Posez vos questions sur les livres de la bibliothèque. Bilbo cherchera les
+      passages pertinents pour vous répondre.
+    </p>
+    <ChatIsland client:load />
+  </div>
+</Base>
+
+<script>
+  import { createSupabaseBrowser } from "../lib/supabase";
+
+  document.getElementById("logout-btn")?.addEventListener("click", async () => {
+    const supabase = createSupabaseBrowser();
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  });
+</script>

@@ -1,0 +1,169 @@
+---
+import Base from "../../layouts/Base.astro";
+import TagBadge from "../../components/TagBadge.astro";
+import ResellerLinks from "../../components/ResellerLinks.astro";
+import { getBookByReference, listAllBookReferences } from "../../lib/db";
+import { markdownToHtml } from "../../lib/markdown";
+import type { BookDetail } from "../../lib/types";
+
+export async function getStaticPaths() {
+  const refs = await listAllBookReferences();
+  return refs.map((r) => ({ params: { reference: r.reference } }));
+}
+
+const { reference } = Astro.params;
+const book = await getBookByReference(reference!);
+
+if (!book) {
+  return Astro.redirect("/404");
+}
+
+// Convert markdown fields to HTML
+const summary = book.summary ? markdownToHtml(book.summary) : null;
+const introduction = book.introduction
+  ? markdownToHtml(book.introduction)
+  : null;
+const coverText = book.cover_text ? markdownToHtml(book.cover_text) : null;
+const chapterSummaries = book.chapter_summaries.map((cs) => ({
+  ...cs,
+  summary: markdownToHtml(cs.summary),
+}));
+
+// SEO
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]*>/g, "");
+}
+
+const description = summary
+  ? stripHtmlTags(summary)
+  : `${book.title} par ${book.authors.join(", ")}`;
+
+const ogUrl = `https://bilbo.example.com/book/${book.reference}`;
+
+function buildJsonLd(book: BookDetail): string {
+  const authorsJson = book.authors.map((a) => ({
+    "@type": "Person",
+    name: a,
+  }));
+
+  const ld: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    name: book.title,
+    author: authorsJson,
+    url: `https://bilbo.example.com/book/${book.reference}`,
+  };
+
+  if (book.isbn) ld.isbn = book.isbn;
+  if (book.editor) {
+    ld.publisher = { "@type": "Organization", name: book.editor };
+  }
+  if (book.summary) {
+    ld.description = stripHtmlTags(
+      book.summary.startsWith("<") ? book.summary : book.summary,
+    );
+  }
+
+  const offers = book.reseller_urls.map((ru) => {
+    const offer: Record<string, string> = {
+      "@type": "Offer",
+      url: ru.url,
+      availability: "https://schema.org/InStock",
+    };
+    if (ru.kind === "paper") {
+      offer.itemCondition = "https://schema.org/NewCondition";
+    }
+    return offer;
+  });
+  if (offers.length > 0) ld.offers = offers;
+
+  return JSON.stringify(ld);
+}
+
+const jsonLd = buildJsonLd(book);
+---
+
+<Base
+  title={book.title}
+  description={description}
+  ogTitle={book.title}
+  ogDescription={description}
+  ogType="book"
+  ogUrl={ogUrl}
+  jsonLd={jsonLd}
+>
+  <div class="book-detail">
+    <article>
+      <h1>{book.title}</h1>
+      <div class="book-meta">
+        <span>{book.authors.join(", ")}</span>
+        {book.editor && <span>{book.editor}</span>}
+        {book.edition_date && <span>{book.edition_date}</span>}
+      </div>
+
+      <div>
+        {book.tags.map((t) => <TagBadge tag={t} />)}
+      </div>
+
+      {
+        book.isbn && (
+          <p>
+            <strong>ISBN : </strong>
+            {book.isbn}
+          </p>
+        )
+      }
+      {
+        book.ean && (
+          <p>
+            <strong>EAN : </strong>
+            {book.ean}
+          </p>
+        )
+      }
+
+      <ResellerLinks urls={book.reseller_urls} />
+
+      {
+        summary && (
+          <div class="book-summary">
+            <h2>Résumé</h2>
+            <div set:html={summary} />
+          </div>
+        )
+      }
+
+      {
+        introduction && (
+          <div class="book-introduction">
+            <h2>Introduction</h2>
+            <div set:html={introduction} />
+          </div>
+        )
+      }
+
+      {
+        coverText && (
+          <div class="book-cover-text">
+            <h2>Quatrième de couverture</h2>
+            <div set:html={coverText} />
+          </div>
+        )
+      }
+
+      {
+        chapterSummaries.length > 0 && (
+          <div class="chapter-summaries">
+            <h2>Résumés des chapitres</h2>
+            {chapterSummaries.map((cs) => (
+              <div class="chapter">
+                <h3>{cs.title ?? `Chapitre ${cs.chapter_idx + 1}`}</h3>
+                <div set:html={cs.summary} />
+              </div>
+            ))}
+          </div>
+        )
+      }
+    </article>
+  </div>
+</Base>

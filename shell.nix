@@ -1,33 +1,17 @@
 {
   nixpkgs ? <nixpkgs>,
   system ? builtins.currentSystem,
-  rust-overlay ? import (fetchTarball "https://github.com/oxalica/rust-overlay/archive/master.tar.gz"),
+  pkgs ? import nixpkgs { inherit system; },
 }:
 
-let
-  pkgs = import nixpkgs {
-    inherit system;
-    overlays = [ rust-overlay ];
-  };
-  rustToolchain = pkgs.rust-bin.nightly.latest.default.override {
-    extensions = [ "rust-src" "rust-analyzer" ];
-    targets = [ "wasm32-unknown-unknown" ];
-  };
-
-in
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    rustToolchain
-    cargo-leptos
-    sqlx-cli
-    pkg-config
-    openssl
-    dart-sass
-    binaryen
-    wasm-bindgen-cli
+    nodejs_22
+    nixd
+    nixfmt-rfc-style
   ];
 
   shellHook = ''
-    echo "bilbo dev shell ready"
+    export PATH="$PWD/node_modules/.bin:$PATH"
   '';
 }
